@@ -1,0 +1,7 @@
+-- CreateTable
+CREATE TABLE "EventSubscription" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "eventId" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
