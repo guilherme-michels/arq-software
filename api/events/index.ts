@@ -3,6 +3,7 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 const eventSchema = z.object({
   name: z.string().min(1).max(255),
@@ -45,6 +46,8 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 
 app.get("/events", verifyToken, async (req, res) => {
   try {
+    const userId = (req as any).user.id;
+
     const events = await prisma.event.findMany({
       select: {
         id: true,
@@ -53,7 +56,22 @@ app.get("/events", verifyToken, async (req, res) => {
         location: true,
       },
     });
-    return res.json(events);
+
+    const eventsWithSubscription = await Promise.all(
+      events.map((event) =>
+        prisma.eventSubscription
+          .findFirst({
+            where: { eventId: event.id, userId },
+          })
+          .then((res) => ({
+            ...event,
+            subscribed: res != null,
+            attended: res?.attended ?? false,
+          }))
+      )
+    );
+
+    return res.json(eventsWithSubscription);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
@@ -61,51 +79,112 @@ app.get("/events", verifyToken, async (req, res) => {
 });
 
 app.post("/events/:id/subscribe", verifyToken, async (req, res) => {
-  const eventId = Number(req.params.id);
-  const userId = (req as any).user.id;
+  try {
+    const eventId = Number(req.params.id);
+    const userId = (req as any).user.id;
 
-  const event = await prisma.event.findFirst({
-    where: {
-      id: Number(eventId),
-    },
-  });
+    const event = await prisma.event.findFirst({
+      where: {
+        id: Number(eventId),
+      },
+    });
 
-  if (event == null) {
-    return res.status(404).json({ error: "Event not found" });
+    if (event == null) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const eventSubscription = await prisma.eventSubscription.create({
+      data: {
+        userId,
+        eventId,
+        attended: false,
+      },
+    });
+
+    return res.json({ eventSubscription });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  const eventSubscription = await prisma.eventSubscription.create({
-    data: {
-      userId,
-      eventId,
-    },
-  });
-
-  return res.json({ eventSubscription });
 });
 
-app.post("/events/:id/cancel-subscription", verifyToken, async (req, res) => {
-  const eventId = Number(req.params.id);
-  const userId = Number((req as any).user.id);
+app.delete("/events/:id/subscribe", verifyToken, async (req, res) => {
+  try {
+    const eventId = Number(req.params.id);
+    const userId = Number((req as any).user.id);
 
-  const eventSubscription = await prisma.eventSubscription.findFirst({
-    where: {
-      eventId,
-      userId,
-    },
-  });
+    const eventSubscription = await prisma.eventSubscription.findFirst({
+      where: {
+        eventId,
+        userId,
+      },
+    });
 
-  if (eventSubscription == null) {
-    return res.status(404).json({ error: "Event subscription not found" });
+    if (eventSubscription == null) {
+      return res.status(404).json({ error: "Event subscription not found" });
+    }
+
+    await prisma.eventSubscription.delete({
+      where: {
+        id: eventSubscription.id,
+      },
+    });
+
+    return res.json({ eventSubscription });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return res
+          .status(409)
+          .json({ error: "You are already subscribed to this event" });
+      }
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
   }
+});
 
-  await prisma.eventSubscription.delete({
-    where: {
-      id: eventSubscription.id,
-    },
-  });
+app.post("/events/:id/attende", async (req, res) => {
+  try {
+    const eventId = Number(req.params.id);
+    const userId = Number((req as any).user.id);
 
-  return res.json({ eventSubscription });
+    const eventSubscription = await prisma.eventSubscription.findFirst({
+      where: {
+        eventId,
+        userId,
+      },
+    });
+
+    if (eventSubscription == null) {
+      return res
+        .status(404)
+        .json({ error: "You are not subscribed to this event" });
+    }
+
+    await prisma.eventSubscription.update({
+      where: {
+        id: eventSubscription.id,
+      },
+      data: {
+        attended: true,
+      },
+    });
+
+    return res.json({ eventSubscription });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return res
+          .status(409)
+          .json({ error: "You are already subscribed to this event" });
+      }
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 const port = 3001;

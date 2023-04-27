@@ -8,48 +8,44 @@ import {
 import { useToast } from "@chakra-ui/react";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { validadeLoginUser } from "../../api/user/user.service";
-
-interface LoginData {
-  email: string;
-  password: string;
-}
+import { isAxiosError } from "axios";
 
 export function Login() {
   const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { login, auth } = useAuth();
+  const { login } = useAuth();
 
   const onFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const data: LoginData = {
-      email,
-      password,
-    };
-
     try {
-      const res = await validadeLoginUser(data);
+      const user = await login(email, password);
 
-      if (res.email != null) {
+      toast({
+        description: `Welcome ` + (user.name ?? user.email),
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+    } catch (error: any) {
+      if (isAxiosError(error) && error.response?.status === 401) {
         toast({
-          description: `Welcome ` + res.email,
-          status: "success",
-          duration: 4000,
-          isClosable: true,
-        });
-      } else {
-        toast({
-          description: `Invalid credentials`,
+          description: "Invalid credentials",
           status: "error",
           duration: 4000,
           isClosable: true,
         });
+        return;
       }
-    } catch (err: any) {
-      const errorResponse = err.response;
+
+      toast({
+        description: error.message,
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
     }
   };
 

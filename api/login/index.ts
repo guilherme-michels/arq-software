@@ -26,7 +26,6 @@ const prisma = new PrismaClient();
 const JWT_SECRET = "mysecretkey";
 
 app.post("/register", async (req, res) => {
-  console.log(req.body);
   const result = await registerSchema.safeParseAsync(req.body);
   if (!result.success) {
     return res.status(400).json({
@@ -109,7 +108,6 @@ app.post("/login", async (req, res) => {
 
 app.get("/verify", async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
-  console.log(token);
 
   if (!token) {
     return res.status(401).json({ error: "Token not provided" });

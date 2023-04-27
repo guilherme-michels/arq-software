@@ -1,61 +1,53 @@
 import {
   createContext,
   useState,
+  useMemo,
   useEffect,
   useContext,
   PropsWithChildren,
 } from "react";
 import { useNavigate } from "react-router-dom";
-
+import * as UserService from "../api/user/user.service";
 interface Auth {
   isAuthenticated: boolean;
-  isLoading: boolean;
 }
 
 interface AuthContextProps {
   auth: Auth;
-  login: (token: string, personId: string) => void;
+  login: (token: string, personId: string) => Promise<UserService.User>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextProps>({
-  auth: { isAuthenticated: false, isLoading: true },
-  login: () => {},
-  logout: () => {},
-});
+const AuthContext = createContext<AuthContextProps | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren<unknown>) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => !!localStorage.getItem("token")
+  );
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsAuthenticated(true);
-      setLoading(false);
-    } else {
-      setIsAuthenticated(false);
-      setLoading(false);
-      navigate("/");
-    }
-  }, []);
+  const login = async (email: string, password: string) => {
+    const { token, user } = await UserService.login({
+      email,
+      password,
+    });
 
-  const login = (token: string, personId: string) => {
-    if (token) {
-      localStorage.setItem("token", token);
-      setIsAuthenticated(true);
-      navigate("/");
-    }
+    localStorage.setItem(`email`, user.email);
+    localStorage.setItem("token", token);
+    setIsAuthenticated(true);
+    navigate("/");
+
+    return user;
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem(`email`);
     setIsAuthenticated(false);
-    navigate("/authenticate");
+    navigate("/");
   };
 
-  const auth = { isAuthenticated, isLoading };
+  const auth = useMemo(() => ({ isAuthenticated }), [isAuthenticated]);
 
   return (
     <AuthContext.Provider value={{ auth, login, logout }}>
@@ -64,4 +56,11 @@ export const AuthProvider = ({ children }: PropsWithChildren<unknown>) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("You must use useAuth within a AuthProvider");
+  }
+
+  return context;
+}

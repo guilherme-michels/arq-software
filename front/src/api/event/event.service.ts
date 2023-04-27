@@ -1,21 +1,21 @@
 import { eventsAPI } from "../index";
 
-interface Event {
+export interface Event {
   id: string;
   name?: string;
   date: Date;
   location: string;
+  subscribed: boolean;
+  attended: boolean;
 }
 
 export function subscribeEvent(eventId: string) {
-  return eventsAPI
-    .get<Event>(`/events/${eventId}/subscribe`)
-    .then((res) => res.data);
+  return eventsAPI.post(`/events/${eventId}/subscribe`).then((res) => res.data);
 }
 
 export function cancelSubscription(eventId: string) {
   return eventsAPI
-    .get<Event>(`/events/${eventId}/cancel-subscription`)
+    .delete(`/events/${eventId}/subscribe`)
     .then((res) => res.data);
 }
 

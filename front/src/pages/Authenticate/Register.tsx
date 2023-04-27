@@ -9,6 +9,8 @@ import {
 import { useToast } from "@chakra-ui/react";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import * as UserService from "../../api/user/user.service";
+import { isAxiosError } from "axios";
 
 interface RegisterData {
   email: string;
@@ -21,37 +23,40 @@ export function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(false);
-
-  const { login, auth } = useAuth();
 
   const onFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const data: RegisterData = {
-      email,
-      password,
-      name,
-    };
-
     try {
-      // if (res.id != null) {
-      //   toast({
-      //     description: `Welcome ` + res.name,
-      //     status: "success",
-      //     duration: 4000,
-      //     isClosable: true,
-      //   });
-      // } else {
-      //   toast({
-      //     description: `Invalid credentials`,
-      //     status: "error",
-      //     duration: 4000,
-      //     isClosable: true,
-      //   });
-      // }
-    } catch (err: any) {
-      const errorResponse = err.response;
+      await UserService.register({
+        name,
+        email,
+        password,
+      });
+
+      toast({
+        description: `Account created `,
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+    } catch (error: any) {
+      if (isAxiosError(error) && error.response?.status === 409) {
+        toast({
+          description: "This email is already being used",
+          status: "error",
+          duration: 4000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      toast({
+        description: error.message,
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
     }
   };
 
@@ -94,17 +99,6 @@ export function Register() {
                 type="password"
                 className="text-white border-solid border-[1px] border-[#ffffff] p-3 rounded flex items-center bg-transparent placeholder:text-white placeholder:font-bold w-1/4 mr-10"
                 placeholder="Password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center justify-center mt-4 w-full">
-              <Keyhole size={38} color="#ffffff" className="mr-1" />
-              <input
-                type="password"
-                className="text-white border-solid border-[1px] border-[#ffffff] p-3 rounded flex items-center bg-transparent placeholder:text-white placeholder:font-bold w-1/4 mr-10"
-                placeholder="Confirm password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />

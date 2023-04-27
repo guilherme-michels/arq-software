@@ -11,22 +11,22 @@ app.use(express.urlencoded({ extended: true }));
 const prisma = new PrismaClient();
 
 const transporter = nodemailer.createTransport({
-  service: "Gmail",
+  service: "gmail",
   auth: {
     user: "suportetesteguilherme@gmail.com",
-    pass: "Ax.h:Fnk:p5eMM2",
+    pass: "csbkjeirntznpdfw",
   },
 });
 
 app.post("/send-email", async (req, res) => {
-  const { to, subject, text } = req.body;
+  const { email, event } = req.body;
 
   try {
     const mailOptions = {
       from: "suportetesteguilherme@gmail.com",
-      to: to,
-      subject: subject,
-      text: text,
+      to: email,
+      subject: `Subscription confirmed to ` + event.name,
+      text: "Congratulations, your subscription has been confirmed!",
     };
 
     await transporter.sendMail(mailOptions);

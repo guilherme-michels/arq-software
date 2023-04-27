@@ -22,4 +22,7 @@ model EventSubscription {
   eventId   Int
   userId    Int
   createdAt DateTime @default(now())
+  attended  Boolean
+
+  @@unique([userId, eventId])
 }
