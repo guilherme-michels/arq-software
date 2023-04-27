@@ -1,5 +1,17 @@
-function App() {
-  return <div className="App">teste</div>;
-}
+import "./styles/global.css";
+import { Routes } from "./routes/routes";
+import { BrowserRouter } from "react-router-dom";
+import { ChakraProvider } from "@chakra-ui/react";
+import { AuthProvider } from "./context/AuthContext";
 
-export default App;
+export function App() {
+  return (
+    <BrowserRouter>
+      <ChakraProvider>
+        <AuthProvider>
+          <Routes />
+        </AuthProvider>
+      </ChakraProvider>
+    </BrowserRouter>
+  );
+}
