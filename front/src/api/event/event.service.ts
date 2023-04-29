@@ -13,6 +13,10 @@ export function subscribeEvent(eventId: string) {
   return eventsAPI.post(`/events/${eventId}/subscribe`).then((res) => res.data);
 }
 
+export function attendeEvent(eventId: string) {
+  return eventsAPI.post(`/events/${eventId}/attende`).then((res) => res.data);
+}
+
 export function cancelSubscription(eventId: string) {
   return eventsAPI
     .delete(`/events/${eventId}/subscribe`)

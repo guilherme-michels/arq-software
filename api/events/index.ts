@@ -145,7 +145,7 @@ app.delete("/events/:id/subscribe", verifyToken, async (req, res) => {
   }
 });
 
-app.post("/events/:id/attende", async (req, res) => {
+app.post("/events/:id/attende", verifyToken, async (req, res) => {
   try {
     const eventId = Number(req.params.id);
     const userId = Number((req as any).user.id);
@@ -161,6 +161,21 @@ app.post("/events/:id/attende", async (req, res) => {
       return res
         .status(404)
         .json({ error: "You are not subscribed to this event" });
+    }
+
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+      },
+    });
+    if (event == null) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    if (event.date.getTime() > new Date().getTime()) {
+      return res.status(400).json({
+        error: "You cant attende to a event that has not started yet",
+      });
     }
 
     await prisma.eventSubscription.update({

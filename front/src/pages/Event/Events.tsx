@@ -5,6 +5,7 @@ import * as EventService from "../../api/event/event.service";
 import * as EmailService from "../../api/email/email.service";
 import clsx from "clsx";
 import { useToast } from "@chakra-ui/react";
+import { isAxiosError } from "axios";
 
 export function Events() {
   const toast = useToast();
@@ -30,7 +31,7 @@ export function Events() {
             key={event.id}
             className="bg-zinc-700 h-44 flex flex-col items-center p-3 shadow-md shadow-zinc-600 rounded text-white"
           >
-            <div className="flex justify-between w-full items-center">
+            <div className="flex justify-between w-full items-center gap-2">
               <strong className="text-xl">{event.name}</strong>
 
               <button
@@ -69,6 +70,55 @@ export function Events() {
                   {event.subscribed ? "Unsubscribe" : "Subscribe"}
                 </span>
               </button>
+
+              {event.subscribed && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await EventService.attendeEvent(event.id);
+                    } catch (error) {
+                      if (
+                        isAxiosError(error) &&
+                        error.response?.status === 400
+                      ) {
+                        toast({
+                          description: `This event has not started yet!`,
+                          status: "error",
+                          duration: 4000,
+                          isClosable: true,
+                        });
+                        return;
+                      }
+
+                      toast({
+                        description: `Error`,
+                        status: "error",
+                        duration: 4000,
+                        isClosable: true,
+                      });
+                      return;
+                    }
+
+                    await fetchEvents();
+
+                    toast({
+                      description: `Attended!`,
+                      status: "success",
+                      duration: 4000,
+                      isClosable: true,
+                    });
+                  }}
+                  disabled={event.attended}
+                >
+                  <span
+                    className={clsx(
+                      "text-sm p-1 rounded cursor-pointer hover:animate-pulse bg-[#1986df]"
+                    )}
+                  >
+                    {event.attended ? "Attended" : "Attende"}
+                  </span>
+                </button>
+              )}
             </div>
             <div className="mt-auto text-sm">
               <span>{event.location} -</span>
