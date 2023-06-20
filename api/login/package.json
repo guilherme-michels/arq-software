@@ -4,7 +4,9 @@
   "author": "Guilherme Michels",
   "scripts": {
     "dev": "tsx watch index.ts",
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "test": "vitest run --reporter verbose",
+    "test:watch": "vitest"
   },
   "license": "ISC",
   "devDependencies": {
@@ -15,7 +17,8 @@
     "@types/node": "^18.15.11",
     "prisma": "^4.13.0",
     "tsx": "^3.12.6",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "vitest": "^0.32.2"
   },
   "dependencies": {
     "@prisma/client": "4.13.0",
