@@ -1,7 +1,7 @@
 import { describe, test, expect, vitest, beforeEach } from "vitest";
-import { LoginService, LoginServiceImpl } from "./src/LoginController";
+import { LoginServiceImpl } from "./src/LoginController";
 import { PrismaClient, User } from "@prisma/client";
-import { Request, Response } from "express";
+import { Request } from "express";
 import bcrypt from "bcrypt";
 
 const mockResponse = () => {

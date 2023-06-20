@@ -9,7 +9,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const prisma = new PrismaClient();
-
 const loginService = new LoginServiceImpl(prisma);
 
 app.post("/register", async (req, res) => {
